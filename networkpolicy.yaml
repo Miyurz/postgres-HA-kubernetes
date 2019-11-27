@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: datalabs-superset-db
+  namespace: sqlanalytics
+spec:
+  podSelector:
+    matchLabels:
+      app: superset-db
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: superset-worker
+    - podSelector:
+        matchLabels:
+          app: superset
+    ports:
+    - protocol: TCP
+      port: 5432

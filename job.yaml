@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-migration
+  namespace: sqlanalytics
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: init-stolon-proxy-service
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nslookup stolon-proxy-service; do echo waiting for stolon-proxy-service; sleep 3; done;']
+      containers:
+        - name: job-migration
+          image: mayurnagekar/postgres-stolon:superset-db-test-12
+          command:
+            - "/bin/bash"
+            - "-ec"
+            - "echo Initialing creating DB and Users ... && /sql.sh "
+          env:
+            - name: TEST
+              value: "test"
+            - name: PGSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: superset-db-secrets
+                  key: PGSQL_USER
+            - name: PGSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: superset-db-secrets
+                  key: PGSQL_PASSWORD
+            - name: PGSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: superset-db-secrets
+                  key: PGSQL_DATABASE
+            - name: STKEEPER_PG_SU_USERNAME
+              value: "stolon"
+            - name: STKEEPER_PG_SU_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: superset-db-secrets
+                  key: password
+            ## Uncomment this to enable debug logs
+            #- name: STSENTINEL_DEBUG
+            #  value: "true"
+          volumeMounts:
+            - name: sql-script
+              mountPath: /sql.sh
+              subPath: sql.sh
+      restartPolicy: Never
+      volumes:
+      - name: sql-script
+        configMap:
+          name: sql-script
+          defaultMode: 0777
+  backoffLimit: 4

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sql-script
+  namespace: sqlanalytics
+data:
+  sql.sh: |
+        #!/bin/bash
+        set -x
+        echo test is $TEST
+        echo PGSQL_USER is $PGSQL_USER
+        echo PGSQL_PASSWORD is $PGSQL_PASSWORD
+        echo PGSQL_DATABASE is $PGSQL_DATABASE
+        export PGPASSWORD='password1'; psql --host stolon-proxy-service --port 5432 postgres -U stolon <<-EOSQL
+                CREATE USER ${PGSQL_USER} WITH PASSWORD '${PGSQL_PASSWORD}';
+                CREATE DATABASE ${PGSQL_DATABASE};
+                GRANT ALL PRIVILEGES ON DATABASE ${PGSQL_DATABASE} TO ${PGSQL_USER};
+        EOSQL
